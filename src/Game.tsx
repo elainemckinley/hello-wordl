@@ -19,7 +19,7 @@ interface GameProps {
 }
 
 const targets = common
-  .slice(0, 20000) // adjust for max target freakiness
+  .slice(0, 200000) // adjust for max target freakiness
   .filter((word) => dictionarySet.has(word) && !names.has(word));
 
 function allTargets(wordLength: number) {
