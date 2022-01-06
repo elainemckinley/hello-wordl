@@ -22,9 +22,8 @@ const targets = common
   .slice(0, 20000) // adjust for max target freakiness
   .filter((word) => dictionarySet.has(word) && !names.has(word));
 
-function randomTarget(wordLength: number) {
-  const eligible = targets.filter((word) => word.length === wordLength);
-  return pick(eligible);
+function allTargets(wordLength: number) {
+  return targets.filter((word) => word.length === wordLength);
 }
 
 function Game(props: GameProps) {
@@ -33,15 +32,61 @@ function Game(props: GameProps) {
   const [currentGuess, setCurrentGuess] = useState<string>("");
   const [wordLength, setWordLength] = useState(5);
   const [hint, setHint] = useState<string>(`Make your first guess!`);
-  const [target, setTarget] = useState(randomTarget(wordLength));
+  const [targets, setTargets] = useState(allTargets(wordLength));
+  const [target, setTarget] = useState(pick(targets));
 
   const reset = () => {
-    setTarget(randomTarget(wordLength));
+    setTarget(pick(targets));
     setGuesses([]);
     setCurrentGuess("");
     setHint("");
     setGameState(GameState.Playing);
   };
+
+  const findNewWorstTarget = () => {
+    // First, narrow down applicable targets to see which ones are valid given new clue.
+    const allValidTargets = targets.filter(tar => guessesAreValidFor(tar, target));
+
+    // Second, sort by which clues are the least helpful.
+    const mapped = allValidTargets.map(t => {
+      return { word: t, score: scoreClues(t) }
+    });
+    const scores = mapped.map(m => m.score);
+    const minScore = Math.min(...scores);
+    const leastHelpful = mapped.filter(tar => tar.score === minScore).map(tar => tar.word);
+
+    // Update our values!
+    const newTarget = pick(leastHelpful);
+    setTarget(newTarget);
+    setTargets(leastHelpful);
+    // console.log(newTarget);
+    console.log(leastHelpful.length);
+    return newTarget;
+  };
+
+  const guessesAreValidFor = (newTarget: string, oldTarget: string) => {
+    return guesses.every(g => {
+      const newClues = clue(g, newTarget);
+      const oldClues = clue(g, oldTarget);
+      return newClues.every((clue, idx) => clue.clue === oldClues[idx].clue);
+    });
+  };
+
+  const scoreClues = (tar: string) => {
+    const yellowRank = 0.5;
+    const greenRank = 1;
+    return guesses.reduce((scoreTotal: number, guess: string) => {
+      const letters = clue(guess, tar);
+      letters.forEach(l => {
+        if (l.clue === Clue.Correct) {
+          scoreTotal += greenRank;
+        } else if (l.clue === Clue.Elsewhere) {
+          scoreTotal += yellowRank;
+        }
+      });
+      return scoreTotal;
+    }, 0);
+  }
 
   const onKey = (key: string) => {
     if (gameState !== GameState.Playing) {
@@ -94,6 +139,11 @@ function Game(props: GameProps) {
     };
   }, [currentGuess, gameState]);
 
+  useEffect(() => {
+    const newWorstTarget = findNewWorstTarget();
+    setTarget(newWorstTarget);  
+  }, [guesses]);
+
   let letterInfo = new Map<string, Clue>();
   const rowDivs = Array(props.maxGuesses)
     .fill(undefined)
@@ -133,7 +183,9 @@ function Game(props: GameProps) {
           value={wordLength}
           onChange={(e) => {
             const length = Number(e.target.value);
-            setTarget(randomTarget(length));
+            const newTargets = allTargets(length);
+            setTargets(newTargets);
+            setTarget(pick(newTargets));
             setWordLength(length);
             setHint(`${length} letters`);
           }}
