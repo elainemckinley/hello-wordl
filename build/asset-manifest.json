@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/hello-wordl/static/css/main.7611ef4d.css",
+    "main.js": "/hello-wordl/static/js/main.018d22f3.js",
+    "index.html": "/hello-wordl/index.html",
+    "main.7611ef4d.css.map": "/hello-wordl/static/css/main.7611ef4d.css.map",
+    "main.018d22f3.js.map": "/hello-wordl/static/js/main.018d22f3.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.7611ef4d.css",
+    "static/js/main.018d22f3.js"
+  ]
+}
